@@ -1,0 +1,7 @@
+{
+  "name": "CoursePath AI - Undergraduate Course Recommendation System",
+  "description": "A comprehensive web-based course recommendation system for undergraduate students featuring prerequisite checking, multi-criteria recommendation modeling, database design, and usability evaluation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
