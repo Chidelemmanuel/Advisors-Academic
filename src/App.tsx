@@ -24,8 +24,11 @@ import {
   DegreeCourse,
 } from './types';
 import { PortalHeader, MainPortalTab, PlannerSubTab } from './components/PortalHeader';
+import { PortalSidebar, PortalSidebarTab } from './components/PortalSidebar';
+import { StudentDashboardView } from './components/StudentDashboardView';
+import { StudentResultsView } from './components/StudentResultsView';
+import { CourseRegistrationView } from './components/CourseRegistrationView';
 import { StepByStepSelector } from './components/StepByStepSelector';
-import { InstitutionsDirectoryView } from './components/InstitutionsDirectoryView';
 import { DegreeCoursesCatalogView } from './components/DegreeCoursesCatalogView';
 import { AiInstitutionAdvisor } from './components/AiInstitutionAdvisor';
 import { MySelectionsRoadmap } from './components/MySelectionsRoadmap';
@@ -43,9 +46,11 @@ export default function App() {
   // Application View Mode: 'landing' (showcase homepage) or 'portal' (dedicated workspace)
   const [viewMode, setViewMode] = useState<'landing' | 'portal'>('landing');
 
-  // Active Main Navigation Tab in Portal:
-  // 'selector' | 'institutions' | 'courses' | 'ai-advisor' | 'roadmap' | 'planner'
-  const [activeMainTab, setActiveMainTab] = useState<MainPortalTab>('selector');
+  // Active Main Navigation Tab in Portal
+  const [activeMainTab, setActiveMainTab] = useState<MainPortalTab>('dashboard');
+
+  // Mobile sidebar drawer state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
   // Sub-tabs for the Undergraduate Curriculum Planner & Degree Audit
   const [plannerSubTab, setPlannerSubTab] = useState<PlannerSubTab>('recommendations');
@@ -73,8 +78,46 @@ export default function App() {
     aiAdvisoryNote: initialEval.recommendationExplanation,
   });
 
+  // Helper to sanitize student name to First & Last Name only (stripping email usernames & numbers)
+  const sanitizeStudentName = (stu: UndergraduateStudentProfile): UndergraduateStudentProfile => {
+    if (!stu || !stu.name) return stu;
+    let cleaned = stu.name.includes('@') ? stu.name.split('@')[0] : stu.name;
+    cleaned = cleaned.replace(/\d+/g, ' ').trim();
+    const parts = cleaned.split(/[\s._-]+/).filter(Boolean);
+    let finalName = stu.name;
+    if (parts.length >= 2) {
+      const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+      const last = parts[parts.length - 1].charAt(0).toUpperCase() + parts[parts.length - 1].slice(1).toLowerCase();
+      finalName = `${first} ${last}`;
+    } else if (parts.length === 1 && parts[0].toLowerCase().startsWith('emmanuel')) {
+      const rest = parts[0].slice(8);
+      finalName = `Emmanuel ${rest.charAt(0).toUpperCase() + rest.slice(1).toLowerCase()}`;
+    }
+    return { ...stu, name: finalName };
+  };
+
   // Active Undergraduate Student Profile (for Semester Curriculum planning)
-  const [student, setStudent] = useState<UndergraduateStudentProfile>(DEFAULT_STUDENTS[0]);
+  const [student, setStudent] = useState<UndergraduateStudentProfile>(() => {
+    try {
+      const stored = localStorage.getItem('coursepath_current_student');
+      if (stored) {
+        return sanitizeStudentName(JSON.parse(stored));
+      }
+    } catch (e) {
+      // ignore
+    }
+    return DEFAULT_STUDENTS[0];
+  });
+
+  const handleSetStudent = (updated: UndergraduateStudentProfile) => {
+    const sanitized = sanitizeStudentName(updated);
+    setStudent(sanitized);
+    try {
+      localStorage.setItem('coursepath_current_student', JSON.stringify(sanitized));
+    } catch (e) {
+      // ignore
+    }
+  };
 
   // Current Semester Schedule Basket
   const [semesterPlan, setSemesterPlan] = useState<Course[]>([
@@ -96,30 +139,6 @@ export default function App() {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
-  };
-
-  // Quick select an institution from directory
-  const handleSelectInstitutionFromDirectory = (inst: HigherInstitution) => {
-    const matchingCourses = DEGREE_COURSES.filter((c) => c.institutionId === inst.id);
-    const targetCourse = matchingCourses[0] || DEGREE_COURSES[0];
-    const targetFaculty = FACULTIES_DATA.find((f) => f.id === targetCourse.facultyId) || null;
-
-    const evaluation = evaluateAdmissionSuitability(studentScoreProfile, targetCourse, inst);
-
-    setSelectedPlan({
-      selectedInstitution: inst,
-      selectedFaculty: targetFaculty,
-      selectedCourse: targetCourse,
-      selectionDate: new Date().toLocaleDateString(),
-      admissionLikelihood: evaluation.likelihood,
-      cutOffDifference: evaluation.scoreDifference,
-      subjectEligibilityMet: evaluation.subjectEligibilityMet,
-      missingSubjects: evaluation.missingRequiredSubjects,
-      aiAdvisoryNote: evaluation.recommendationExplanation,
-    });
-
-    showToast(`Selected ${inst.name} (${inst.shortName}). Switched to Step-by-Step Selector.`);
-    setActiveMainTab('selector');
   };
 
   // Quick select a degree course from catalog
@@ -201,8 +220,8 @@ export default function App() {
           catalog={UNDERGRADUATE_COURSES}
           student={student}
           setStudent={(updated) => {
-            setStudent(updated);
-            showToast(`Switched student persona to ${updated.name}.`);
+            handleSetStudent(updated);
+            showToast(`Switched student profile to ${updated.name}.`);
           }}
           semesterPlan={semesterPlan}
           onAddToPlan={handleAddToPlan}
@@ -210,148 +229,156 @@ export default function App() {
           onInspectPrereqs={(c) => setInspectingCourse(c)}
           onViewDetails={(c) => setDetailsCourse(c)}
           onCompareCourse={handleCompareCourse}
-          onLaunchPortal={() => setViewMode('portal')}
+          onLaunchPortal={() => {
+            setActiveMainTab('dashboard');
+            setViewMode('portal');
+          }}
           onNavigateToTopic={(tab) => {
-            setActiveMainTab(tab);
+            setActiveMainTab(tab as MainPortalTab);
             setViewMode('portal');
           }}
           onOpenProfileModal={() => setIsProfileModalOpen(true)}
         />
       ) : (
-        <>
-          {/* Header & Global Status with full Topics Navigation */}
-          <PortalHeader
-            activeMainTab={activeMainTab}
-            setActiveMainTab={setActiveMainTab}
-            plannerSubTab={plannerSubTab}
-            setPlannerSubTab={setPlannerSubTab}
+        <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
+          {/* Responsive Navigation Sidebar */}
+          <PortalSidebar
+            activeTab={
+              activeMainTab === 'courses' ? 'selector' : (activeMainTab as PortalSidebarTab)
+            }
+            setActiveTab={(tab) => {
+              setActiveMainTab(tab as MainPortalTab);
+            }}
             student={student}
-            setStudent={(updated) => {
-              setStudent(updated);
-              showToast(`Switched student persona to ${updated.name}.`);
-            }}
-            studentScoreProfile={studentScoreProfile}
-            setStudentScoreProfile={(updated) => {
-              setStudentScoreProfile(updated);
-              showToast(`Updated applicant score profile for ${updated.studentName}.`);
-            }}
-            selectedPlan={selectedPlan}
             semesterPlan={semesterPlan}
+            isOpenMobile={isMobileSidebarOpen}
+            onCloseMobile={() => setIsMobileSidebarOpen(false)}
             onOpenProfileModal={() => setIsProfileModalOpen(true)}
-            onBackToLanding={() => setViewMode('landing')}
+            onLogout={() => setViewMode('landing')}
           />
 
-          {/* Main Content Area */}
-          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            {/* TOPIC 1: Step-by-Step Guided Selector */}
-            {activeMainTab === 'selector' && (
-              <StepByStepSelector
-                studentProfile={studentScoreProfile}
-                setStudentProfile={setStudentScoreProfile}
-                selectedPlan={selectedPlan}
-                setSelectedPlan={setSelectedPlan}
-                onNavigateToRoadmap={() => setActiveMainTab('roadmap')}
-                onNavigateToAdvisor={() => setActiveMainTab('ai-advisor')}
-              />
-            )}
+          {/* Main Portal View (Offset for desktop sidebar lg:pl-72) */}
+          <div className="flex-1 flex flex-col min-w-0 lg:pl-72">
+            {/* Header & Global Status */}
+            <PortalHeader
+              activeMainTab={activeMainTab}
+              setActiveMainTab={setActiveMainTab}
+              plannerSubTab={plannerSubTab}
+              setPlannerSubTab={setPlannerSubTab}
+              student={student}
+              setStudent={(updated) => {
+                handleSetStudent(updated);
+                showToast(`Switched student profile to ${updated.name}.`);
+              }}
+              studentScoreProfile={studentScoreProfile}
+              setStudentScoreProfile={(updated) => {
+                setStudentScoreProfile(updated);
+                showToast(`Updated applicant score profile for ${updated.studentName}.`);
+              }}
+              selectedPlan={selectedPlan}
+              semesterPlan={semesterPlan}
+              onOpenProfileModal={() => setIsProfileModalOpen(true)}
+              onBackToLanding={() => setViewMode('landing')}
+              onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
+            />
 
-            {/* TOPIC 2: Higher Institutions Directory */}
-            {activeMainTab === 'institutions' && (
-              <InstitutionsDirectoryView
-                onSelectInstitutionForPlan={handleSelectInstitutionFromDirectory}
-              />
-            )}
+            {/* Main Content Area */}
+            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              {/* 1. Dashboard View */}
+              {activeMainTab === 'dashboard' && (
+                <StudentDashboardView
+                  student={student}
+                  semesterPlan={semesterPlan}
+                  selectedPlan={selectedPlan}
+                  onNavigateToTab={(tab) => {
+                    setActiveMainTab(tab as MainPortalTab);
+                  }}
+                  onOpenProfileModal={() => setIsProfileModalOpen(true)}
+                  onViewCourseDetails={(c) => setDetailsCourse(c)}
+                />
+              )}
 
-            {/* TOPIC 3: Degree Courses & Cut-Off Catalog */}
-            {activeMainTab === 'courses' && (
-              <DegreeCoursesCatalogView
-                onSelectCourseForPlan={handleSelectCourseFromCatalog}
-              />
-            )}
+              {/* 2. Course Registration View */}
+              {(activeMainTab === 'registration' ||
+                (activeMainTab === 'planner' && plannerSubTab !== 'audit' && plannerSubTab !== 'academic-advisor')) && (
+                <CourseRegistrationView
+                  catalog={UNDERGRADUATE_COURSES}
+                  student={student}
+                  semesterPlan={semesterPlan}
+                  onAddToPlan={handleAddToPlan}
+                  onRemoveFromPlan={handleRemoveFromPlan}
+                  onClearPlan={handleClearPlan}
+                  onInspectPrereqs={(c) => setInspectingCourse(c)}
+                  onViewDetails={(c) => setDetailsCourse(c)}
+                  onCompareCourse={handleCompareCourse}
+                  onOpenAdvisor={() => setActiveMainTab('ai-advisor')}
+                  compareCourseA={compareCourseA}
+                  compareCourseB={compareCourseB}
+                />
+              )}
 
-            {/* TOPIC 4: Gemini AI Admissions Counselor */}
-            {activeMainTab === 'ai-advisor' && (
-              <AiInstitutionAdvisor
-                studentProfile={studentScoreProfile}
-                selectedPlan={selectedPlan}
-                onApplyAdvisoryPlan={(inst, course) => {
-                  handleSelectCourseFromCatalog(course);
-                }}
-              />
-            )}
+              {/* 3. Results / Examination Transcript View */}
+              {activeMainTab === 'results' && (
+                <StudentResultsView
+                  student={student}
+                  semesterPlan={semesterPlan}
+                />
+              )}
 
-            {/* TOPIC 5: My Selections & Admissions Roadmap */}
-            {activeMainTab === 'roadmap' && (
-              <MySelectionsRoadmap
-                selectedPlan={selectedPlan}
-                studentProfile={studentScoreProfile}
-                onNavigateToWizard={() => setActiveMainTab('selector')}
-                onNavigateToAdvisor={() => setActiveMainTab('ai-advisor')}
-              />
-            )}
+              {/* 4. Degree Audit & Graduation Requirements */}
+              {(activeMainTab === 'audit' ||
+                (activeMainTab === 'planner' && plannerSubTab === 'audit')) && (
+                <DegreeAuditView
+                  catalog={UNDERGRADUATE_COURSES}
+                  student={student}
+                  semesterPlan={semesterPlan}
+                  onAddToPlan={handleAddToPlan}
+                  onInspectPrereqs={(c) => setInspectingCourse(c)}
+                />
+              )}
 
-            {/* TOPIC 6: Undergraduate Semester Planner & Degree Audit */}
-            {activeMainTab === 'planner' && (
-              <div className="space-y-6">
-                {plannerSubTab === 'recommendations' && (
-                  <RecommendationFeed
-                    catalog={UNDERGRADUATE_COURSES}
-                    student={student}
-                    semesterPlan={semesterPlan}
-                    onAddToPlan={handleAddToPlan}
-                    onRemoveFromPlan={handleRemoveFromPlan}
-                    onInspectPrereqs={(c) => setInspectingCourse(c)}
-                    onViewDetails={(c) => setDetailsCourse(c)}
-                    onCompareCourse={handleCompareCourse}
-                    onOpenAdvisor={() => setPlannerSubTab('academic-advisor')}
-                  />
-                )}
+              {/* 5. Step-by-Step Admissions Selector */}
+              {activeMainTab === 'selector' && (
+                <StepByStepSelector
+                  studentProfile={studentScoreProfile}
+                  setStudentProfile={setStudentScoreProfile}
+                  selectedPlan={selectedPlan}
+                  setSelectedPlan={setSelectedPlan}
+                  onNavigateToRoadmap={() => setActiveMainTab('roadmap')}
+                  onNavigateToAdvisor={() => setActiveMainTab('ai-advisor')}
+                />
+              )}
 
-                {plannerSubTab === 'basket' && (
-                  <SemesterScheduleBasket
-                    student={student}
-                    semesterPlan={semesterPlan}
-                    onRemoveFromPlan={handleRemoveFromPlan}
-                    onClearPlan={handleClearPlan}
-                    onOpenAdvisor={() => setPlannerSubTab('academic-advisor')}
-                    onNavigateToCatalog={() => setPlannerSubTab('recommendations')}
-                  />
-                )}
+              {/* 6. Degree Courses & Cut-Off Catalog */}
+              {activeMainTab === 'courses' && (
+                <DegreeCoursesCatalogView
+                  onSelectCourseForPlan={handleSelectCourseFromCatalog}
+                />
+              )}
 
-                {plannerSubTab === 'audit' && (
-                  <DegreeAuditView
-                    catalog={UNDERGRADUATE_COURSES}
-                    student={student}
-                    semesterPlan={semesterPlan}
-                    onAddToPlan={handleAddToPlan}
-                    onInspectPrereqs={(c) => setInspectingCourse(c)}
-                  />
-                )}
+              {/* 7. My Selections & Admissions Roadmap */}
+              {activeMainTab === 'roadmap' && (
+                <MySelectionsRoadmap
+                  selectedPlan={selectedPlan}
+                  studentProfile={studentScoreProfile}
+                  onNavigateToWizard={() => setActiveMainTab('selector')}
+                  onNavigateToAdvisor={() => setActiveMainTab('ai-advisor')}
+                />
+              )}
 
-                {plannerSubTab === 'academic-advisor' && (
-                  <AiAcademicAdvisor
-                    student={student}
-                    semesterPlan={semesterPlan}
-                    catalog={UNDERGRADUATE_COURSES}
-                    onAddToPlan={handleAddToPlan}
-                  />
-                )}
-
-                {plannerSubTab === 'compare' && (
-                  <CourseComparisonView
-                    catalog={UNDERGRADUATE_COURSES}
-                    student={student}
-                    semesterPlan={semesterPlan}
-                    onAddToPlan={handleAddToPlan}
-                    onRemoveFromPlan={handleRemoveFromPlan}
-                    initialCourseA={compareCourseA}
-                    initialCourseB={compareCourseB}
-                  />
-                )}
-              </div>
-            )}
-          </main>
-        </>
+              {/* 8. AI Academic Advisor / Counselor */}
+              {(activeMainTab === 'ai-advisor' ||
+                (activeMainTab === 'planner' && plannerSubTab === 'academic-advisor')) && (
+                <AiAcademicAdvisor
+                  student={student}
+                  semesterPlan={semesterPlan}
+                  catalog={UNDERGRADUATE_COURSES}
+                  onAddToPlan={handleAddToPlan}
+                />
+              )}
+            </main>
+          </div>
+        </div>
       )}
 
       {/* Modals */}
@@ -377,7 +404,7 @@ export default function App() {
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         onSave={(updated) => {
-          setStudent(updated);
+          handleSetStudent(updated);
           showToast('Updated student academic profile.');
         }}
       />

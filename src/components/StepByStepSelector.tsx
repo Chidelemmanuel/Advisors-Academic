@@ -38,7 +38,6 @@ import {
   HIGHER_INSTITUTIONS,
   FACULTIES_DATA,
   DEGREE_COURSES,
-  SAMPLE_STUDENT_PROFILES,
   evaluateAdmissionSuitability,
 } from '../data/institutionsData';
 
@@ -218,118 +217,7 @@ export const StepByStepSelector: React.FC<StepByStepSelectorProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* 1. Header Banner & Flow Progress */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
-                Interactive Guided Selector
-              </span>
-              <span className="text-xs text-slate-500">Step {currentStep} of 5</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-              Higher Institution, Faculty & Degree Course Matcher
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl">
-              Follow our 5-step admissions pathway: enter your entrance exam score, choose an accredited institution, select your faculty, pick your degree course, and receive instant eligibility verification.
-            </p>
-          </div>
-
-          {/* Quick Persona Selector */}
-          <div className="flex items-center gap-2 self-start md:self-auto bg-slate-50 p-2 rounded-xl border border-slate-200 text-xs">
-            <UserCheck className="w-4 h-4 text-indigo-600" />
-            <span className="text-slate-500 font-medium">Sample Profile:</span>
-            <select
-              aria-label="Select Sample Student Profile"
-              className="bg-transparent font-bold text-slate-800 focus:outline-hidden cursor-pointer"
-              value={studentProfile.studentName}
-              onChange={(e) => {
-                const found = SAMPLE_STUDENT_PROFILES.find(
-                  (p) => p.studentName === e.target.value
-                );
-                if (found) {
-                  setStudentProfile(found);
-                }
-              }}
-            >
-              {SAMPLE_STUDENT_PROFILES.map((p, idx) => (
-                <option key={idx} value={p.studentName}>
-                  {p.studentName} (Score: {p.entranceExamScore})
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* 5-Step Stepper Bar */}
-        <div className="grid grid-cols-5 gap-2 pt-5">
-          {[
-            { step: 1, title: 'Student Score', icon: UserCheck, desc: 'UTME & GPA' },
-            { step: 2, title: 'Institution', icon: Building2, desc: 'Choose College' },
-            { step: 3, title: 'Faculty', icon: Layers, desc: 'Choose School' },
-            { step: 4, title: 'Degree Course', icon: BookOpen, desc: 'Cut-off & Program' },
-            { step: 5, title: 'Eligibility & AI', icon: Sparkles, desc: 'Admissions Fit' },
-          ].map((item) => {
-            const isCompleted = currentStep > item.step;
-            const isCurrent = currentStep === item.step;
-            const Icon = item.icon;
-
-            return (
-              <button
-                key={item.step}
-                onClick={() => setCurrentStep(item.step)}
-                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                  isCurrent
-                    ? 'border-indigo-600 bg-indigo-50/70 shadow-xs'
-                    : isCompleted
-                    ? 'border-emerald-200 bg-emerald-50/40 text-slate-700'
-                    : 'border-slate-200 bg-slate-50/60 text-slate-400 hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <div
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${
-                      isCurrent
-                        ? 'bg-indigo-600 text-white'
-                        : isCompleted
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-200 text-slate-600'
-                    }`}
-                  >
-                    {isCompleted ? <Check className="w-3.5 h-3.5" /> : item.step}
-                  </div>
-                  <Icon
-                    className={`w-4 h-4 ${
-                      isCurrent
-                        ? 'text-indigo-600'
-                        : isCompleted
-                        ? 'text-emerald-600'
-                        : 'text-slate-400'
-                    }`}
-                  />
-                </div>
-                <div
-                  className={`text-xs font-bold truncate ${
-                    isCurrent
-                      ? 'text-indigo-950'
-                      : isCompleted
-                      ? 'text-slate-900'
-                      : 'text-slate-500'
-                  }`}
-                >
-                  {item.title}
-                </div>
-                <div className="text-[10px] text-slate-500 truncate hidden sm:block">
-                  {item.desc}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 2. Step 1: Student Score & Profile Setup */}
+      {/* Step 1: Student Score & Profile Setup */}
       {currentStep === 1 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
           <div className="border-b border-slate-100 pb-4">

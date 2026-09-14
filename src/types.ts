@@ -84,6 +84,7 @@ export interface UndergraduateStudentProfile {
   id: string;
   name: string;
   studentId: string;
+  avatarUrl?: string;
   university: string;
   major: string;
   standing: AcademicStanding;

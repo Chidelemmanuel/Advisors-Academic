@@ -46,7 +46,23 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    const raw = formData.name.trim();
+    let cleaned = raw.includes('@') ? raw.split('@')[0] : raw;
+    cleaned = cleaned.replace(/\d+/g, ' ').trim();
+    const parts = cleaned.split(/[\s._-]+/).filter(Boolean);
+    let finalName = formData.name;
+    if (parts.length >= 2) {
+      const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+      const last = parts[parts.length - 1].charAt(0).toUpperCase() + parts[parts.length - 1].slice(1).toLowerCase();
+      finalName = `${first} ${last}`;
+    }
+    const updatedProfile = { ...formData, name: finalName };
+    try {
+      localStorage.setItem('coursepath_current_student', JSON.stringify(updatedProfile));
+    } catch (err) {
+      // ignore
+    }
+    onSave(updatedProfile);
     onClose();
   };
 
@@ -79,6 +95,78 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSave} className="p-6 space-y-4 text-xs">
+          {/* Round Profile Picture Selection & Preview */}
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row items-start sm:items-center gap-3.5">
+            <div className="relative shrink-0">
+              {formData.avatarUrl ? (
+                <img
+                  src={formData.avatarUrl}
+                  alt={formData.name}
+                  referrerPolicy="no-referrer"
+                  className="w-14 h-14 rounded-full object-cover ring-2 ring-indigo-500/30 shadow-xs"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-lg ring-2 ring-indigo-500/30 shadow-xs">
+                  {formData.name ? formData.name.substring(0, 2).toUpperCase() : 'ST'}
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 min-w-0 space-y-1.5 w-full">
+              <label className="font-semibold text-slate-700 block text-xs">Profile Picture Avatar</label>
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  {
+                    label: 'David',
+                    url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=160&h=160',
+                  },
+                  {
+                    label: 'Chioma',
+                    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=160&h=160',
+                  },
+                  {
+                    label: 'Oluwaseun',
+                    url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=160&h=160',
+                  },
+                  {
+                    label: 'Scholar',
+                    url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=160&h=160',
+                  },
+                ].map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, avatarUrl: preset.url })}
+                    className={`relative rounded-full p-0.5 border-2 transition-all cursor-pointer ${
+                      formData.avatarUrl === preset.url
+                        ? 'border-indigo-600 scale-105 ring-1 ring-indigo-600'
+                        : 'border-transparent hover:border-slate-300'
+                    }`}
+                    title={preset.label}
+                  >
+                    <img
+                      src={preset.url}
+                      alt={preset.label}
+                      referrerPolicy="no-referrer"
+                      className="w-7 h-7 rounded-full object-cover"
+                    />
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, avatarUrl: undefined })}
+                  className={`px-2 py-1 text-[11px] font-semibold rounded-lg border transition-colors cursor-pointer ${
+                    !formData.avatarUrl
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  Initials
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Name and Major */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>

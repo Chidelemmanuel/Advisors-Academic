@@ -847,8 +847,8 @@ export const DEFAULT_STUDENTS: UndergraduateStudentProfile[] = [
   {
     id: 'student-junior-cs-ai',
     name: 'David Adeleke',
-    studentId: 'UG/2023/CS/4812',
-    university: 'Imperial Tech University',
+    studentId: 'NAU/CSC/2026/001',
+    university: 'Nnamdi Azikiwe University (NAU)',
     major: 'Computer Science (B.Sc.)',
     standing: 'Junior',
     level: '300L',
