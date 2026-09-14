@@ -84,7 +84,7 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
               Welcome back, {student.name}
             </h1>
             <p className="text-xs sm:text-sm text-blue-100/90 leading-relaxed">
-              Matriculation ID: <span className="font-mono font-bold text-white">{student.studentId}</span> • Major: <span className="font-semibold text-white">{student.major}</span> • Advisor: <span className="text-white">{student.academicAdviserName}</span>
+              Matriculation ID: <span className="font-mono font-bold text-white">{student.studentId}</span> • Major: <span className="font-semibold text-white">{student.major}</span>
             </p>
           </div>
 

@@ -48,6 +48,14 @@ export default function App() {
 
   // Active Main Navigation Tab in Portal
   const [activeMainTab, setActiveMainTab] = useState<MainPortalTab>('dashboard');
+  const [courseRegResetKey, setCourseRegResetKey] = useState<number>(0);
+
+  const handleTabChange = (tab: MainPortalTab) => {
+    if (tab === 'registration') {
+      setCourseRegResetKey((prev) => prev + 1);
+    }
+    setActiveMainTab(tab);
+  };
 
   // Mobile sidebar drawer state
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
@@ -78,22 +86,46 @@ export default function App() {
     aiAdvisoryNote: initialEval.recommendationExplanation,
   });
 
-  // Helper to sanitize student name to First & Last Name only (stripping email usernames & numbers)
-  const sanitizeStudentName = (stu: UndergraduateStudentProfile): UndergraduateStudentProfile => {
-    if (!stu || !stu.name) return stu;
-    let cleaned = stu.name.includes('@') ? stu.name.split('@')[0] : stu.name;
-    cleaned = cleaned.replace(/\d+/g, ' ').trim();
-    const parts = cleaned.split(/[\s._-]+/).filter(Boolean);
-    let finalName = stu.name;
-    if (parts.length >= 2) {
-      const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
-      const last = parts[parts.length - 1].charAt(0).toUpperCase() + parts[parts.length - 1].slice(1).toLowerCase();
-      finalName = `${first} ${last}`;
-    } else if (parts.length === 1 && parts[0].toLowerCase().startsWith('emmanuel')) {
-      const rest = parts[0].slice(8);
-      finalName = `Emmanuel ${rest.charAt(0).toUpperCase() + rest.slice(1).toLowerCase()}`;
+  // Helper to sanitize student profile (matriculation ID, advisor, name)
+  const sanitizeStudentProfile = (stu: UndergraduateStudentProfile): UndergraduateStudentProfile => {
+    if (!stu) return stu;
+    const finalStudent = { ...stu };
+
+    // 1. Ensure matriculation ID is NAU/CSC/2026/001 if it contains an email or was unassigned
+    if (
+      !finalStudent.studentId ||
+      finalStudent.studentId.includes('@') ||
+      finalStudent.studentId.toLowerCase().includes('emmanuelozochi')
+    ) {
+      finalStudent.studentId = 'NAU/CSC/2026/001';
     }
-    return { ...stu, name: finalName };
+
+    // 2. Remove Prof. Marcus Chen
+    if (finalStudent.academicAdviserName?.includes('Marcus Chen')) {
+      finalStudent.academicAdviserName = '';
+    }
+
+    // Ensure gender
+    finalStudent.gender = finalStudent.gender || 'Male';
+
+    // 3. Name formatting
+    if (finalStudent.name) {
+      let cleaned = finalStudent.name.includes('@') ? finalStudent.name.split('@')[0] : finalStudent.name;
+      cleaned = cleaned.replace(/\d+/g, ' ').trim();
+      const parts = cleaned.split(/[\s._-]+/).filter(Boolean);
+      let finalName = finalStudent.name;
+      if (parts.length >= 2) {
+        const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+        const last = parts[parts.length - 1].charAt(0).toUpperCase() + parts[parts.length - 1].slice(1).toLowerCase();
+        finalName = `${first} ${last}`;
+      } else if (parts.length === 1 && parts[0].toLowerCase().startsWith('emmanuel')) {
+        const rest = parts[0].slice(8);
+        finalName = `Emmanuel ${rest.charAt(0).toUpperCase() + rest.slice(1).toLowerCase()}`;
+      }
+      finalStudent.name = finalName;
+    }
+
+    return finalStudent;
   };
 
   // Active Undergraduate Student Profile (for Semester Curriculum planning)
@@ -101,16 +133,22 @@ export default function App() {
     try {
       const stored = localStorage.getItem('coursepath_current_student');
       if (stored) {
-        return sanitizeStudentName(JSON.parse(stored));
+        const sanitized = sanitizeStudentProfile(JSON.parse(stored));
+        try {
+          localStorage.setItem('coursepath_current_student', JSON.stringify(sanitized));
+        } catch {
+          // ignore
+        }
+        return sanitized;
       }
     } catch (e) {
       // ignore
     }
-    return DEFAULT_STUDENTS[0];
+    return sanitizeStudentProfile(DEFAULT_STUDENTS[0]);
   });
 
   const handleSetStudent = (updated: UndergraduateStudentProfile) => {
-    const sanitized = sanitizeStudentName(updated);
+    const sanitized = sanitizeStudentProfile(updated);
     setStudent(sanitized);
     try {
       localStorage.setItem('coursepath_current_student', JSON.stringify(sanitized));
@@ -247,7 +285,7 @@ export default function App() {
               activeMainTab === 'courses' ? 'selector' : (activeMainTab as PortalSidebarTab)
             }
             setActiveTab={(tab) => {
-              setActiveMainTab(tab as MainPortalTab);
+              handleTabChange(tab as MainPortalTab);
             }}
             student={student}
             semesterPlan={semesterPlan}
@@ -291,7 +329,7 @@ export default function App() {
                   semesterPlan={semesterPlan}
                   selectedPlan={selectedPlan}
                   onNavigateToTab={(tab) => {
-                    setActiveMainTab(tab as MainPortalTab);
+                    handleTabChange(tab as MainPortalTab);
                   }}
                   onOpenProfileModal={() => setIsProfileModalOpen(true)}
                   onViewCourseDetails={(c) => setDetailsCourse(c)}
@@ -302,6 +340,7 @@ export default function App() {
               {(activeMainTab === 'registration' ||
                 (activeMainTab === 'planner' && plannerSubTab !== 'audit' && plannerSubTab !== 'academic-advisor')) && (
                 <CourseRegistrationView
+                  key={courseRegResetKey}
                   catalog={UNDERGRADUATE_COURSES}
                   student={student}
                   semesterPlan={semesterPlan}
@@ -314,6 +353,7 @@ export default function App() {
                   onOpenAdvisor={() => setActiveMainTab('ai-advisor')}
                   compareCourseA={compareCourseA}
                   compareCourseB={compareCourseB}
+                  onShowToast={showToast}
                 />
               )}
 

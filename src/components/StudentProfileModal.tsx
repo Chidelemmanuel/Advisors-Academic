@@ -56,7 +56,20 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
       const last = parts[parts.length - 1].charAt(0).toUpperCase() + parts[parts.length - 1].slice(1).toLowerCase();
       finalName = `${first} ${last}`;
     }
-    const updatedProfile = { ...formData, name: finalName };
+    let finalStudentId = formData.studentId ? formData.studentId.trim() : 'NAU/CSC/2026/001';
+    if (finalStudentId.includes('@') || finalStudentId.toLowerCase().includes('emmanuelozochi')) {
+      finalStudentId = 'NAU/CSC/2026/001';
+    }
+    let finalAdviser = formData.academicAdviserName;
+    if (finalAdviser?.includes('Marcus Chen')) {
+      finalAdviser = '';
+    }
+    const updatedProfile = {
+      ...formData,
+      name: finalName,
+      studentId: finalStudentId,
+      academicAdviserName: finalAdviser,
+    };
     try {
       localStorage.setItem('coursepath_current_student', JSON.stringify(updatedProfile));
     } catch (err) {
@@ -167,8 +180,20 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
             </div>
           </div>
 
-          {/* Name and Major */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Matriculation ID, Name and Major */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="font-semibold text-slate-700 block mb-1">Matriculation ID</label>
+              <input
+                type="text"
+                value={formData.studentId}
+                onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                className="w-full text-xs font-mono font-bold border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500/20"
+                placeholder="NAU/CSC/2026/001"
+                required
+              />
+            </div>
+
             <div>
               <label className="font-semibold text-slate-700 block mb-1">Full Student Name</label>
               <input
@@ -192,8 +217,8 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
             </div>
           </div>
 
-          {/* Standing & Level */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Standing, Level & Gender */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
               <label className="font-semibold text-slate-700 block mb-1">Academic Standing</label>
               <select
@@ -217,6 +242,18 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 {levels.map((lvl) => (
                   <option key={lvl} value={lvl}>{lvl}</option>
                 ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="font-semibold text-slate-700 block mb-1">Gender</label>
+              <select
+                value={formData.gender || 'Male'}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value as 'Male' | 'Female' })}
+                className="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-medium"
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
               </select>
             </div>
 

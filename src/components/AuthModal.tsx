@@ -49,6 +49,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [matricNumber, setMatricNumber] = useState('NAU/CSC/2024/0341');
+  const [gender, setGender] = useState<'Male' | 'Female'>('Male');
   const [email, setEmail] = useState('');
   const [institution, setInstitution] = useState('Nnamdi Azikiwe University (UNIZIK)');
   const [department, setDepartment] = useState('Computer Science');
@@ -115,11 +116,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         ...DEFAULT_STUDENTS[0],
         id: `stu_${Date.now()}`,
         name: formattedFullName,
-        studentId: matricNumber.trim(),
+        studentId: matricNumber.trim() || 'NAU/CSC/2026/001',
+        gender: gender,
         university: institution,
         major: department,
         level: academicLevel,
         standing: standingMap[academicLevel] || 'Sophomore',
+        academicAdviserName: '',
       };
 
       // Persist in localStorage so subsequent logins or reloads retain this name
@@ -207,10 +210,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         }
       }
 
-      const activeProfile: UndergraduateStudentProfile = found || {
+      const defaultMatric = loginIdentifier.includes('@') ? 'NAU/CSC/2026/001' : loginIdentifier.trim();
+
+      const baseProfile = found || {
         ...DEFAULT_STUDENTS[0],
-        studentId: loginIdentifier.trim(),
+        studentId: defaultMatric,
         name: resolvedName,
+      };
+
+      let finalMatric = baseProfile.studentId || defaultMatric;
+      if (!finalMatric || finalMatric.includes('@') || finalMatric.toLowerCase().includes('emmanuelozochi')) {
+        finalMatric = 'NAU/CSC/2026/001';
+      }
+
+      const activeProfile: UndergraduateStudentProfile = {
+        ...baseProfile,
+        studentId: finalMatric,
+        academicAdviserName: baseProfile.academicAdviserName?.includes('Marcus Chen') ? '' : (baseProfile.academicAdviserName || ''),
       };
 
       try {
@@ -378,7 +394,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">
                     Department
@@ -412,6 +428,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <option value="200L">200L (Sophomore)</option>
                     <option value="300L">300L (Junior)</option>
                     <option value="400L">400L (Senior)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Gender
+                  </label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value as 'Male' | 'Female')}
+                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
                   </select>
                 </div>
               </div>

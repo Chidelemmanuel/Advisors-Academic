@@ -54,10 +54,6 @@ export const PortalSidebar: React.FC<PortalSidebarProps> = ({
   onLogout,
 }) => {
   const registeredCount = semesterPlan.length;
-  const auditProgress = Math.min(
-    100,
-    Math.round((student.completedCredits / student.totalDegreeCreditsRequired) * 100)
-  );
 
   const academicNavItems = [
     {
@@ -82,14 +78,6 @@ export const PortalSidebar: React.FC<PortalSidebarProps> = ({
       badge: `${student.currentGpa.toFixed(2)} GPA`,
       badgeColor: 'bg-emerald-100 text-emerald-800',
       description: 'Semester grades & slip',
-    },
-    {
-      id: 'audit' as PortalSidebarTab,
-      label: 'Degree Audit',
-      icon: GraduationCap,
-      badge: `${auditProgress}%`,
-      badgeColor: 'bg-blue-100 text-blue-700',
-      description: 'Curriculum requirements',
     },
   ];
 

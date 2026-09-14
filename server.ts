@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+const DEFAULT_PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
 
@@ -229,9 +229,22 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Course Recommendation Server running on http://0.0.0.0:${PORT}`);
-  });
+  const tryListen = (port: number, maxAttempts = 10) => {
+    const server = app.listen(port, '0.0.0.0', () => {
+      console.log(`Course Recommendation Server running on http://localhost:${port}`);
+    });
+
+    server.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE' && maxAttempts > 0) {
+        console.warn(`Port ${port} is in use, trying port ${port + 1}...`);
+        tryListen(port + 1, maxAttempts - 1);
+      } else {
+        console.error('Server error:', err);
+      }
+    });
+  };
+
+  tryListen(DEFAULT_PORT);
 }
 
 startServer();
