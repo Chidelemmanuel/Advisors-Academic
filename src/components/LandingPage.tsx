@@ -33,8 +33,6 @@ import {
 } from 'lucide-react';
 import { Course, UndergraduateStudentProfile } from '../types';
 import { DEFAULT_STUDENTS } from '../data/undergraduateCatalog';
-import { evaluateCourseRecommendation } from '../utils/courseMatchEngine';
-import { AcademicRegistrationSection } from './AcademicRegistrationSection';
 import { AuthModal } from './AuthModal';
 
 interface LandingPageProps {
@@ -141,14 +139,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <ul className="flex items-center gap-6 lg:gap-8 text-sm font-semibold text-slate-700">
               <li>
                 <button
-                  onClick={() => scrollToSection('academic-info')}
-                  className="hover:text-orange-600 transition-colors cursor-pointer"
-                >
-                  Registration
-                </button>
-              </li>
-              <li>
-                <button
                   onClick={() => scrollToSection('faq')}
                   className="hover:text-orange-600 transition-colors cursor-pointer"
                 >
@@ -197,14 +187,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-slate-200 bg-white px-4 py-3 shadow-lg">
             <ul className="flex flex-col space-y-2 text-sm font-semibold text-slate-700">
-              <li>
-                <button
-                  onClick={() => scrollToSection('academic-info')}
-                  className="w-full text-left py-2 px-3 rounded-lg hover:bg-orange-50 hover:text-orange-600 transition-colors"
-                >
-                  Academic Registration
-                </button>
-              </li>
               <li>
                 <button
                   onClick={() => scrollToSection('faq')}
@@ -374,14 +356,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
 
-      {/* 6. DEDICATED SECTION: STUDENT ACADEMIC REGISTRATION FORM (#academic-info) */}
-      <AcademicRegistrationSection
-        onExploreDegree={() => {
-          if (onNavigateToTopic) onNavigateToTopic('courses');
-          else onLaunchPortal();
-        }}
-      />
-
       {/* 9. TESTIMONIALS / REVIEWS */}
       <section className="py-16 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
@@ -509,11 +483,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 Platform Navigation
               </span>
               <ul className="space-y-1.5">
-                <li>
-                  <button onClick={() => scrollToSection('academic-info')} className="hover:text-orange-600 transition-colors cursor-pointer">
-                    Academic Registration
-                  </button>
-                </li>
                 <li>
                   <button onClick={() => scrollToSection('faq')} className="hover:text-orange-600 transition-colors cursor-pointer">
                     FAQ
